@@ -40,12 +40,19 @@
      (abort-recursive-edit)))
 
 (defun shelldon-cd ()
-  "Change directories internally in shelldon minibuffer context."
+  "Change directories internally in shelldon minibuffer context.
+
+Warning, this is a big, ugly hack(suggestions welcome!). Basically, in order
+to change the workdir, the current shelldon command must be exited and re-called
+with the new workdir after calling cd."
   (interactive)
-  (shelldon-quit-and-run
-   (let ((use-file-dialog nil))
-     (call-interactively #'cd))
-   (call-interactively #'shelldon)))
+  ;; Save the current context(shelldon or shelldon-loop)
+  ;; TODO: maybe also save the current minibuffer string
+  (let ((context real-last-command))
+    (shelldon-quit-and-run
+     (let ((use-file-dialog nil))
+       (call-interactively #'cd))
+     (call-interactively context))))
 (define-key minibuffer-local-shell-command-map (kbd "C-x C-f") #'shelldon-cd)
 
 (defvar shelldon-hist '())
@@ -85,7 +92,7 @@ to OUTPUT-BUFFER and stderr to ERROR-BUFFER, just like the raw
 (defun shelldon-loop ()
   "Loops the shelldon command to more closely emulate a terminal."
   (interactive)
-  (loop (call-interactively 'shelldon)))
+  (loop (call-interactively #'shelldon)))
 
 (defun shelldon-output-history ()
   "Displays the output of the selected command from the shelldon history."
