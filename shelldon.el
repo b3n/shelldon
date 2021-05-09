@@ -29,6 +29,25 @@
 
 (require 'cl-macs)
 
+(defmacro shelldon-quit-and-run (&rest body)
+  "Quit the minibuffer and run BODY afterwards."
+  `(progn
+     (put 'quit 'error-message "")
+     (run-at-time nil nil
+                  (lambda ()
+                    (put 'quit 'error-message "Quit")
+                    ,@body))
+     (abort-recursive-edit)))
+
+(defun shelldon-cd ()
+  "Change directories internally in shelldon minibuffer context."
+  (interactive)
+  (shelldon-quit-and-run
+   (let ((use-file-dialog nil))
+     (call-interactively #'cd))
+   (call-interactively #'shelldon)))
+(define-key minibuffer-local-shell-command-map (kbd "C-x C-f") #'shelldon-cd)
+
 (defvar shelldon-hist '())
 (defvar shelldon-prompt-str ">> ")
 (setq shelldon-prompt-str ">> ")
