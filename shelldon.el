@@ -27,7 +27,7 @@
 
 ;;; Code:
 
-(require 'cl-macs)
+(require 'cl)
 
 (defmacro shelldon-quit-and-run (&rest body)
   "Quit the minibuffer and run BODY afterwards."
