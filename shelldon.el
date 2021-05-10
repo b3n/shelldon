@@ -29,35 +29,22 @@
 
 (require 'cl)
 
-(defmacro shelldon-quit-and-run (&rest body)
-  "Quit the minibuffer and run BODY afterwards."
-  `(progn
-     (put 'quit 'error-message "")
-     (run-at-time nil nil
-                  (lambda ()
-                    (put 'quit 'error-message "Quit")
-                    ,@body))
-     (minibuffer-keyboard-quit)))
-
 (defun shelldon-cd ()
-  "Change directories internally in shelldon-loop.
+  "Change directories without leaving shelldon context.
 
-Warning, this is a big, ugly hack(suggestions welcome!). Basically, in order
-to change the workdir, the current shelldon command must be exited and re-called
-with the new workdir after calling cd."
+Get the workdir, then throw it back for the shelldon command to set it in that
+context."
   (interactive)
-  ;; Save the current context(shelldon or shelldon-loop)
-  ;; TODO: maybe also save the current minibuffer string
-  (shelldon-quit-and-run
-   (let ((use-file-dialog nil))
-     (call-interactively #'cd))
-   (call-interactively #'shelldon-loop)))
+  (let (shelldon-wd)
+    (setq shelldon-wd (call-interactively #'cd))
+    (throw 'shelldon-cwd shelldon-wd)))
+
 (define-key minibuffer-local-shell-command-map (kbd "C-x C-f") #'shelldon-cd)
 
 (defvar shelldon-hist '())
 (defvar shelldon-prompt-str ">> ")
 (setq shelldon-prompt-str ">> ")
-(defun shelldon (command &optional output-buffer error-buffer)
+(defun shelldon-internal (command &optional output-buffer error-buffer)
   "Execute COMMAND asynchronously in the minibuffer with output history.
 
 Keep track of each command output in a separate buffer.  Optionally send stdout
@@ -86,7 +73,20 @@ to OUTPUT-BUFFER and stderr to ERROR-BUFFER, just like the raw
   (add-to-list 'shelldon-hist `(,(concat (number-to-string (length shelldon-hist)) ":" command) .
                                 ,output-buffer))
   (shell-command command output-buffer error-buffer)
-  (with-current-buffer output-buffer (buffer-string)))
+  (with-current-buffer output-buffer (buffer-string))
+  nil)
+(defun shelldon ()
+  "Execute given asynchronously in the minibuffer with output history.
+
+If the user tries to change the workdir while the command is executing, catch
+the change and re-execute in the new context."
+  (interactive)
+  (let ((rtn t))
+    (while rtn
+      (setq rtn (catch 'shelldon-cwd (call-interactively #'shelldon-internal)))
+      (when rtn
+        (setq default-directory rtn)
+        (setq list-buffers-directory rtn)))))
 
 (defun shelldon-loop ()
   "Loops the shelldon command to more closely emulate a terminal."
