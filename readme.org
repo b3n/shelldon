@@ -22,7 +22,7 @@
 
   - If you’d like to then use it like an actual REPL, well, we’re just missing the loop part, so I’ve also provided a *shelldon-loop* command.
 
-  - By popular demand, you may also change the workdir without leaving shelldon with *shelldon-cd* command, bound to "C-x C-f" in *minibuffer-local-shell-command-map* by default.
+  - By popular demand, you may also change the workdir without leaving shelldon-loop with the *shelldon-cd* command, bound to "C-x C-f" in *minibuffer-local-shell-command-map* by default.
 
   - Customize the prompt by modifying the *shelldon-prompt-str* variable. You may also toggle the display of the current working directory with the shell-command-prompt-show-cwd, just like other shell commands.
 
